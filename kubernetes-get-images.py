@@ -30,6 +30,9 @@ def get_pods_all_namespaces() -> list:
     return codev1.list_pod_for_all_namespaces().items
 
 
+def get_pods_namespace(namespace: str) -> list:
+    return codev1.list_namespaced_pod(namespace).items
+
 def get_images_pod(pod: V1Pod) -> list:
     return [ container.image for container in pod.spec.containers ]
 
@@ -42,22 +45,17 @@ def create_table (pod: V1Pod, images: list, table: list) -> list:
         ] 
     )
 
-def arg_ns_validate(args: argparse.Namespace, table: list) -> list:
-    if args.namespace == None:
-        for pod in get_pods_all_namespaces():
-            images = get_images_pod(pod)
-            create_table(pod, images, table)
-    elif args.namespace != None:
-        for pod in get_pods_all_namespaces():
-            if args.namespace == pod.metadata.namespace:
-                images = get_images_pod(pod)
-                create_table(pod, images, table)
-    return table
 
 def main():
     args = parser.parse_args()
     table = []
-    arg_ns_validate(args, table)
+    if args.namespace == None:
+        pod = get_pods_all_namespaces()
+    else:
+        pod = get_pods_namespace(args.namespace)
+    for p in pod:
+        images = get_images_pod(p)
+        create_table(p, images, table)
     print(tabulate(table, headers=TABLE_HEADERS, tablefmt=FMT))
 
 if __name__ == "__main__":
